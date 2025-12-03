@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Deliveries Report - Skanda Credit & Billing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Deliveries Report</h1>
+    <div>
+        <a href="{{ url_for('report.outstanding') }}" class="btn btn-secondary">Outstanding Report</a>
+        <a href="{{ url_for('report.collection') }}" class="btn btn-secondary">Collection Report</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Pending</h5>
+                <h2 class="text-warning">{{ stats.pending }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">In Transit</h5>
+                <h2 class="text-info">{{ stats.in_transit }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Delivered</h5>
+                <h2 class="text-success">{{ stats.delivered }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Cancelled</h5>
+                <h2 class="text-danger">{{ stats.cancelled }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Total Deliveries: {{ stats.total }}</h5>
+    </div>
+</div>
+{% endblock %}
+

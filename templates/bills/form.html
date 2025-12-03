@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}New Bill - Skanda Credit & Billing{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">New Bill</h1>
+
+<!-- OCR Upload Section -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Step 1: Upload Bill Image (Optional - OCR)</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label for="ocr_image" class="form-label">Upload Bill Image for OCR</label>
+            <input type="file" class="form-control" id="ocr_image" accept="image/*,.pdf">
+            <small class="form-text text-muted">Upload an image to extract bill information automatically</small>
+        </div>
+        <button type="button" class="btn btn-info" id="uploadOCR">Upload & Extract</button>
+        <div id="ocrResult" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+                <strong>OCR Extracted Text:</strong>
+                <pre id="ocrText" class="bg-light p-2 mt-2" style="max-height: 200px; overflow-y: auto;"></pre>
+            </div>
+            <button type="button" class="btn btn-sm btn-success" id="useOCRData">Use Extracted Data</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="billForm" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    {{ form.vendor_id.label(class="form-label") }}
+                    {{ form.vendor_id(class="form-select") }}
+                    {% if form.vendor_id.errors %}
+                        <div class="text-danger small">{{ form.vendor_id.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.bill_number.label(class="form-label") }}
+                    {{ form.bill_number(class="form-control") }}
+                    {% if form.bill_number.errors %}
+                        <div class="text-danger small">{{ form.bill_number.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.bill_date.label(class="form-label") }}
+                    {{ form.bill_date(class="form-control") }}
+                    {% if form.bill_date.errors %}
+                        <div class="text-danger small">{{ form.bill_date.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    {{ form.bill_type.label(class="form-label") }}
+                    {{ form.bill_type(class="form-select") }}
+                    {% if form.bill_type.errors %}
+                        <div class="text-danger small">{{ form.bill_type.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    {{ form.is_proxy.label(class="form-label") }}
+                    {{ form.is_proxy(class="form-select") }}
+                    {% if form.is_proxy.errors %}
+                        <div class="text-danger small">{{ form.is_proxy.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4" id="splitsContainer" style="display: none;">
+                    {{ form.number_of_splits.label(class="form-label") }}
+                    {{ form.number_of_splits(class="form-control") }}
+                    {% if form.number_of_splits.errors %}
+                        <div class="text-danger small">{{ form.number_of_splits.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <hr>
+            <h5>Payment Information</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    {{ form.payment_type.label(class="form-label") }}
+                    {{ form.payment_type(class="form-select") }}
+                    {% if form.payment_type.errors %}
+                        <div class="text-danger small">{{ form.payment_type.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3" id="partialAmountContainer" style="display: none;">
+                    {{ form.partial_amount.label(class="form-label") }}
+                    {{ form.partial_amount(class="form-control") }}
+                    {% if form.partial_amount.errors %}
+                        <div class="text-danger small">{{ form.partial_amount.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3" id="paymentMethodContainer" style="display: none;">
+                    {{ form.payment_method.label(class="form-label") }}
+                    {{ form.payment_method(class="form-select") }}
+                    {% if form.payment_method.errors %}
+                        <div class="text-danger small">{{ form.payment_method.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3" id="paymentRefContainer" style="display: none;">
+                    {{ form.payment_reference.label(class="form-label") }}
+                    {{ form.payment_reference(class="form-control") }}
+                    {% if form.payment_reference.errors %}
+                        <div class="text-danger small">{{ form.payment_reference.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <hr>
+            <h5>Items</h5>
+            <div id="itemsContainer">
+                <div class="item-row mb-2">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" name="item_description[]" class="form-control" placeholder="Description" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" step="0.01" name="item_quantity[]" class="form-control qty" placeholder="Qty" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" step="0.01" name="item_unit_price[]" class="form-control price" placeholder="Price" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" name="item_amount[]" class="form-control amount" placeholder="Amount" readonly>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm mb-3" id="addItem">Add Item</button>
+            
+            <hr>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Subtotal</label>
+                    <input type="text" class="form-control" id="subtotal" value="0.00" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tax (18%)</label>
+                    <input type="text" class="form-control" id="tax" value="0.00" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Total</label>
+                    <input type="text" class="form-control" id="total" value="0.00" readonly>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save Bill</button>
+                <a href="{{ url_for('bill.list') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('itemsContainer');
+    const addBtn = document.getElementById('addItem');
+    const isProxySelect = document.getElementById('is_proxy');
+    const splitsContainer = document.getElementById('splitsContainer');
+    const uploadOCRBtn = document.getElementById('uploadOCR');
+    const ocrImageInput = document.getElementById('ocr_image');
+    const ocrResult = document.getElementById('ocrResult');
+    const ocrText = document.getElementById('ocrText');
+    const useOCRDataBtn = document.getElementById('useOCRData');
+    
+    const paymentTypeSelect = document.getElementById('payment_type');
+    const partialAmountContainer = document.getElementById('partialAmountContainer');
+    const paymentMethodContainer = document.getElementById('paymentMethodContainer');
+    const paymentRefContainer = document.getElementById('paymentRefContainer');
+    
+    // Show/hide splits field based on proxy selection
+    isProxySelect.addEventListener('change', function() {
+        if (this.value === 'YES') {
+            splitsContainer.style.display = 'block';
+        } else {
+            splitsContainer.style.display = 'none';
+        }
+    });
+    
+    // Show/hide payment fields based on payment type
+    paymentTypeSelect.addEventListener('change', function() {
+        if (this.value === 'FULL' || this.value === 'PARTIAL') {
+            paymentMethodContainer.style.display = 'block';
+            paymentRefContainer.style.display = 'block';
+            if (this.value === 'PARTIAL') {
+                partialAmountContainer.style.display = 'block';
+            } else {
+                partialAmountContainer.style.display = 'none';
+            }
+        } else {
+            paymentMethodContainer.style.display = 'none';
+            paymentRefContainer.style.display = 'none';
+            partialAmountContainer.style.display = 'none';
+        }
+    });
+    
+    // Trigger on page load if already set
+    if (paymentTypeSelect.value === 'FULL' || paymentTypeSelect.value === 'PARTIAL') {
+        paymentMethodContainer.style.display = 'block';
+        paymentRefContainer.style.display = 'block';
+        if (paymentTypeSelect.value === 'PARTIAL') {
+            partialAmountContainer.style.display = 'block';
+        }
+    }
+    
+    // OCR Upload
+    uploadOCRBtn.addEventListener('click', function() {
+        const file = ocrImageInput.files[0];
+        if (!file) {
+            alert('Please select an image file');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('ocr_image', file);
+        
+        uploadOCRBtn.disabled = true;
+        uploadOCRBtn.textContent = 'Processing...';
+        
+        fetch('{{ url_for("bill.ocr_upload") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ocrText.textContent = data.ocr_text;
+                ocrResult.style.display = 'block';
+                
+                // Try to pre-fill form with suggestions
+                if (data.suggestions) {
+                    if (data.suggestions.bill_number) {
+                        document.getElementById('bill_number').value = data.suggestions.bill_number;
+                    }
+                    if (data.suggestions.bill_date) {
+                        // Try to parse and format date
+                        document.getElementById('bill_date').value = data.suggestions.bill_date;
+                    }
+                }
+            } else {
+                alert('OCR processing failed');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error processing OCR');
+        })
+        .finally(() => {
+            uploadOCRBtn.disabled = false;
+            uploadOCRBtn.textContent = 'Upload & Extract';
+        });
+    });
+    
+    // Use OCR data button (for future enhancement - could parse and fill more fields)
+    useOCRDataBtn.addEventListener('click', function() {
+        alert('OCR data extracted. Please review and fill in the form manually based on the extracted text.');
+    });
+    
+    // Item management
+    addBtn.addEventListener('click', function() {
+        const newRow = document.createElement('div');
+        newRow.className = 'item-row mb-2';
+        newRow.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" name="item_description[]" class="form-control" placeholder="Description" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="0.01" name="item_quantity[]" class="form-control qty" placeholder="Qty" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="0.01" name="item_unit_price[]" class="form-control price" placeholder="Price" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="item_amount[]" class="form-control amount" placeholder="Amount" readonly>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(newRow);
+        attachEventListeners(newRow);
+    });
+    
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-item')) {
+            if (container.children.length > 1) {
+                e.target.closest('.item-row').remove();
+                calculateTotals();
+            }
+        }
+    });
+    
+    function attachEventListeners(row) {
+        const qty = row.querySelector('.qty');
+        const price = row.querySelector('.price');
+        const amount = row.querySelector('.amount');
+        
+        [qty, price].forEach(input => {
+            input.addEventListener('input', function() {
+                const q = parseFloat(qty.value) || 0;
+                const p = parseFloat(price.value) || 0;
+                amount.value = (q * p).toFixed(2);
+                calculateTotals();
+            });
+        });
+    }
+    
+    function calculateTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('.amount').forEach(amt => {
+            subtotal += parseFloat(amt.value) || 0;
+        });
+        const tax = subtotal * 0.18;
+        const total = subtotal + tax;
+        
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+        document.getElementById('tax').value = tax.toFixed(2);
+        document.getElementById('total').value = total.toFixed(2);
+    }
+    
+    // Attach listeners to initial row
+    document.querySelectorAll('.item-row').forEach(row => attachEventListeners(row));
+});
+</script>
+{% endblock %}

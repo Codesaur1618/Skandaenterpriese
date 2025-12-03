@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Collection Report - Skanda Credit & Billing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Collection Report</h1>
+    <div>
+        <a href="{{ url_for('report.outstanding') }}" class="btn btn-secondary">Outstanding Report</a>
+        <a href="{{ url_for('report.deliveries') }}" class="btn btn-secondary">Deliveries Report</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form.start_date.label(class="form-label") }}
+                    {{ form.start_date(class="form-control") }}
+                    {% if form.start_date.errors %}
+                        <div class="text-danger small">{{ form.start_date.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    {{ form.end_date.label(class="form-label") }}
+                    {{ form.end_date(class="form-control") }}
+                    {% if form.end_date.errors %}
+                        <div class="text-danger small">{{ form.end_date.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if results %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Report Results ({{ results.start_date }} to {{ results.end_date }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h6>Total Incoming</h6>
+                        <h3>₹{{ "%.2f"|format(results.total_incoming) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h6>Total Outgoing</h6>
+                        <h3>₹{{ "%.2f"|format(results.total_outgoing) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h6>Net</h6>
+                        <h3>₹{{ "%.2f"|format(results.net) }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
