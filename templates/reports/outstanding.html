@@ -5,7 +5,22 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Outstanding Report</h1>
-    <a href="{{ url_for('report.collection') }}" class="btn btn-secondary">Collection Report</a>
+    <div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('report.outstanding_export_pdf') }}">
+                    <i class="bi bi-file-pdf text-danger"></i> Export as PDF
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('report.outstanding_export_excel') }}">
+                    <i class="bi bi-file-excel text-success"></i> Export as Excel
+                </a></li>
+            </ul>
+        </div>
+        <a href="{{ url_for('report.collection') }}" class="btn btn-secondary ms-2">Collection Report</a>
+    </div>
 </div>
 
 <div class="card">
