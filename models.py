@@ -74,6 +74,23 @@ class Vendor(db.Model):
     address = db.Column(db.Text)
     gst_number = db.Column(db.String(50))
     credit_limit = db.Column(db.Numeric(12, 2), default=0.00)
+    # Additional fields for Excel import
+    customer_code = db.Column(db.String(100), nullable=True)  # For duplicate checking (uniqueness handled in app logic)
+    billing_address = db.Column(db.Text, nullable=True)
+    shipping_address = db.Column(db.Text, nullable=True)
+    pincode = db.Column(db.String(20), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    country = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.String(20), nullable=True)  # ACTIVE/INACTIVE
+    block_status = db.Column(db.String(10), nullable=True)  # YES/NO
+    contact_person = db.Column(db.String(200), nullable=True)
+    alternate_name = db.Column(db.String(200), nullable=True)
+    alternate_mobile = db.Column(db.String(20), nullable=True)
+    whatsapp_no = db.Column(db.String(20), nullable=True)
+    pan = db.Column(db.String(50), nullable=True)
+    # Store additional fields as JSON for flexibility
+    additional_data = db.Column(db.Text, nullable=True)  # JSON string for other fields
     
     bills = db.relationship('Bill', backref='vendor', lazy=True)
     proxy_bills = db.relationship('ProxyBill', backref='vendor', lazy=True)

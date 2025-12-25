@@ -720,6 +720,32 @@ a:hover {
     }
 }
 
+/* Page Header */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-header .d-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* Utility Classes for Colors */
 .bg-primary-50 { background-color: var(--primary-50) !important; }
 .bg-green-50 { background-color: #f0fdf4 !important; }
@@ -730,6 +756,11 @@ a:hover {
 .text-slate-800 { color: var(--slate-800) !important; }
 
 .border-primary-200 { border-color: var(--primary-200) !important; }
+
+/* Cursor pointer for clickable elements */
+.cursor-pointer {
+    cursor: pointer;
+}
 
 /* Spinner Styles */
 .spinner-overlay {
