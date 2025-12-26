@@ -284,3 +284,136 @@ if (document.getElementById('bill-items-container')) {
 // Export functions globally
 window.clearAllFilters = clearAllFilters;
 window.removeFilter = removeFilter;
+
+// ============================================
+// PWA (Progressive Web App) Support
+// ============================================
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker registered successfully:', registration.scope);
+                
+                // Check for updates periodically
+                setInterval(() => {
+                    registration.update();
+                }, 60000); // Check every minute
+            })
+            .catch((error) => {
+                console.log('Service Worker registration failed:', error);
+            });
+        
+        // Listen for service worker updates
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('New service worker activated. Reloading page...');
+            window.location.reload();
+        });
+    });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+const installButton = document.getElementById('pwa-install-button');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    
+    // Show custom install button if it exists
+    if (installButton) {
+        installButton.style.display = 'block';
+        installButton.addEventListener('click', () => {
+            installButton.style.display = 'none';
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+});
+
+// Handle successful PWA installation
+window.addEventListener('appinstalled', () => {
+    console.log('PWA was installed');
+    deferredPrompt = null;
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+    // Show success message
+    if (typeof showToast === 'function') {
+        showToast('App installed successfully!', 'success');
+    }
+});
+
+// Check if app is already installed
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    console.log('App is running in standalone mode');
+    document.body.classList.add('pwa-standalone');
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+}
+
+// Offline/Online status handling
+window.addEventListener('online', () => {
+    console.log('Connection restored');
+    if (typeof showToast === 'function') {
+        showToast('You are back online', 'success');
+    } else {
+        // Fallback notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+        notification.style.zIndex = '9999';
+        notification.innerHTML = '<i class="bi bi-wifi me-2"></i>You are back online<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+});
+
+window.addEventListener('offline', () => {
+    console.log('Connection lost');
+    if (typeof showToast === 'function') {
+        showToast('You are offline. Some features may be limited.', 'warning');
+    } else {
+        // Fallback notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+        notification.style.zIndex = '9999';
+        notification.innerHTML = '<i class="bi bi-wifi-off me-2"></i>You are offline. Some features may be limited.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        document.body.appendChild(notification);
+    }
+});
+
+// Helper function to show toast (if not already defined)
+if (typeof showToast === 'undefined') {
+    window.showToast = function(message, type = 'info') {
+        const toastContainer = document.querySelector('.toast-container') || document.body;
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' || type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'}-fill me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 4000 });
+        bsToast.show();
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    };
+}

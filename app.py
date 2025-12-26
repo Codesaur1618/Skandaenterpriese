@@ -56,10 +56,23 @@ def create_app(config_name='default'):
     upload_folder = app.config['UPLOAD_FOLDER']
     os.makedirs(upload_folder, exist_ok=True)
     
+    # Serve service worker with correct MIME type
+    @app.route('/service-worker.js')
+    def service_worker():
+        from flask import send_from_directory
+        import os
+        static_folder = app.static_folder or os.path.join(app.root_path, 'static')
+        return send_from_directory(os.path.join(static_folder, 'js'), 'service-worker.js', mimetype='application/javascript')
+    
     return app
 
 
+# Create app instance for Gunicorn (production)
+# Gunicorn will use: gunicorn app:app
+app = create_app(os.environ.get('FLASK_ENV', 'production'))
+
 if __name__ == '__main__':
+    # Development server
     app = create_app('development')
     with app.app_context():
         db.create_all()
