@@ -26,7 +26,9 @@
    FLASK_ENV=production
    SECRET_KEY=<generate-with: python -c "import secrets; print(secrets.token_hex(32))">
    DATABASE_URL=<paste-internal-database-url>
+   PYTHON_VERSION=3.11.0
    ```
+   **Important**: Add `PYTHON_VERSION=3.11.0` to ensure Python 3.11 is used (Pillow compatibility)
 
 4. **Deploy** → Wait for build to complete
 
