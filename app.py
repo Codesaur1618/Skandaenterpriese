@@ -64,6 +64,111 @@ def create_app(config_name='default'):
         static_folder = app.static_folder or os.path.join(app.root_path, 'static')
         return send_from_directory(os.path.join(static_folder, 'js'), 'service-worker.js', mimetype='application/javascript')
     
+    # Database initialization endpoint (for Render free tier - no shell access)
+    @app.route('/init-db')
+    def init_database():
+        from flask import jsonify
+        from models import Tenant, User, Permission
+        from extensions import db
+        
+        try:
+            with app.app_context():
+                # Create all tables
+                db.create_all()
+                
+                # Check if already initialized
+                tenant = Tenant.query.filter_by(code='skanda').first()
+                if tenant:
+                    return jsonify({
+                        'success': True,
+                        'message': 'Database already initialized. Tenant exists.',
+                        'tenant': tenant.name
+                    }), 200
+                
+                # Run seed logic
+                from seed import PERMISSIONS, DEFAULT_ROLE_PERMISSIONS
+                
+                # Create tenant
+                tenant = Tenant(
+                    name='Skanda Enterprises',
+                    code='skanda',
+                    is_active=True
+                )
+                db.session.add(tenant)
+                db.session.flush()
+                
+                # Create permissions
+                for perm_data in PERMISSIONS:
+                    perm = Permission(
+                        name=perm_data['name'],
+                        code=perm_data['code'],
+                        description=perm_data['description'],
+                        category=perm_data['category']
+                    )
+                    db.session.add(perm)
+                
+                db.session.flush()
+                
+                # Create role permissions
+                from models import RolePermission
+                permissions = Permission.query.all()
+                roles = ['ADMIN', 'SALESMAN', 'DELIVERY', 'ORGANISER']
+                
+                for role in roles:
+                    if role == 'ADMIN':
+                        for perm in permissions:
+                            role_perm = RolePermission(
+                                role=role,
+                                permission_id=perm.id,
+                                granted=True
+                            )
+                            db.session.add(role_perm)
+                    else:
+                        default_perms = DEFAULT_ROLE_PERMISSIONS.get(role, [])
+                        for perm_code in default_perms:
+                            perm = Permission.query.filter_by(code=perm_code).first()
+                            if perm:
+                                role_perm = RolePermission(
+                                    role=role,
+                                    permission_id=perm.id,
+                                    granted=True
+                                )
+                                db.session.add(role_perm)
+                
+                # Create users
+                users_to_create = [
+                    {'username': 'admin', 'role': 'ADMIN', 'password': 'admin123'},
+                    {'username': 'salesman', 'role': 'SALESMAN', 'password': 'salesman123'},
+                    {'username': 'delivery', 'role': 'DELIVERY', 'password': 'delivery123'},
+                    {'username': 'organiser', 'role': 'ORGANISER', 'password': 'organiser123'}
+                ]
+                
+                for user_data in users_to_create:
+                    user = User(
+                        tenant_id=tenant.id,
+                        username=user_data['username'],
+                        role=user_data['role'],
+                        is_active=True
+                    )
+                    user.set_password(user_data['password'])
+                    db.session.add(user)
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Database initialized successfully!',
+                    'tenant': tenant.name,
+                    'users_created': [u['username'] for u in users_to_create],
+                    'login_url': '/login'
+                }), 200
+                
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
     return app
 
 

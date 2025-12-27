@@ -143,20 +143,24 @@ Your code is already prepared with:
 
 ### Step 5: Initialize Database
 
-1. **Access Render Shell**:
-   - Go to your web service → "Shell" tab
-   - Or use Render's SSH feature
+**Option A: Using Browser (Free Tier - Recommended)**
+1. Visit your app URL: `https://your-app-name.onrender.com/init-db`
+2. You'll see a JSON response confirming database initialization
+3. Done! You can now login at `/login`
 
-2. **Run database initialization**:
+**Option B: Using Render Shell (Paid Tier Only)**
+1. Go to your web service → "Shell" tab
+2. Run:
    ```bash
    python init_db.py
    python seed.py
    ```
 
-3. **Verify**:
-   - Visit your app URL
-   - Login with default credentials (check `seed.py` for defaults)
-   - Verify all features work
+**Default Login Credentials:**
+- Admin: `admin` / `admin123`
+- Salesman: `salesman` / `salesman123`
+- Delivery: `delivery` / `delivery123`
+- Organiser: `organiser` / `organiser123`
 
 ---
 
