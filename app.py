@@ -67,107 +67,144 @@ def create_app(config_name='default'):
     # Database initialization endpoint (for Render free tier - no shell access)
     @app.route('/init-db')
     def init_database():
-        from flask import jsonify
-        from models import Tenant, User, Permission
+        from flask import jsonify, render_template_string
+        from models import Tenant, User, Permission, RolePermission
         from extensions import db
+        import traceback
         
         try:
-            with app.app_context():
-                # Create all tables
-                db.create_all()
-                
-                # Check if already initialized
-                tenant = Tenant.query.filter_by(code='skanda').first()
-                if tenant:
-                    return jsonify({
-                        'success': True,
-                        'message': 'Database already initialized. Tenant exists.',
-                        'tenant': tenant.name
-                    }), 200
-                
-                # Run seed logic
-                from seed import PERMISSIONS, DEFAULT_ROLE_PERMISSIONS
-                
-                # Create tenant
-                tenant = Tenant(
-                    name='Skanda Enterprises',
-                    code='skanda',
-                    is_active=True
+            # Import all models to ensure they're registered with SQLAlchemy
+            from models import (
+                Tenant, User, Vendor, Bill, BillItem, ProxyBill, ProxyBillItem,
+                CreditEntry, DeliveryOrder, OCRJob, AuditLog, Permission, RolePermission
+            )
+            
+            # Create all tables
+            db.create_all()
+            
+            # Check if already initialized
+            tenant = Tenant.query.filter_by(code='skanda').first()
+            if tenant:
+                html = """
+                <!DOCTYPE html>
+                <html>
+                <head><title>Database Initialized</title></head>
+                <body style="font-family: Arial; padding: 40px; text-align: center;">
+                    <h2 style="color: #28a745;">✓ Database Already Initialized</h2>
+                    <p>Tenant: <strong>{}</strong></p>
+                    <p><a href="/login" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Login</a></p>
+                </body>
+                </html>
+                """.format(tenant.name)
+                return html, 200
+            
+            # Run seed logic
+            from seed import PERMISSIONS, DEFAULT_ROLE_PERMISSIONS
+            
+            # Create tenant
+            tenant = Tenant(
+                name='Skanda Enterprises',
+                code='skanda',
+                is_active=True
+            )
+            db.session.add(tenant)
+            db.session.flush()
+            
+            # Create permissions
+            for perm_data in PERMISSIONS:
+                perm = Permission(
+                    name=perm_data['name'],
+                    code=perm_data['code'],
+                    description=perm_data['description'],
+                    category=perm_data['category']
                 )
-                db.session.add(tenant)
-                db.session.flush()
-                
-                # Create permissions
-                for perm_data in PERMISSIONS:
-                    perm = Permission(
-                        name=perm_data['name'],
-                        code=perm_data['code'],
-                        description=perm_data['description'],
-                        category=perm_data['category']
-                    )
-                    db.session.add(perm)
-                
-                db.session.flush()
-                
-                # Create role permissions
-                from models import RolePermission
-                permissions = Permission.query.all()
-                roles = ['ADMIN', 'SALESMAN', 'DELIVERY', 'ORGANISER']
-                
-                for role in roles:
-                    if role == 'ADMIN':
-                        for perm in permissions:
+                db.session.add(perm)
+            
+            db.session.flush()
+            
+            # Create role permissions
+            permissions = Permission.query.all()
+            roles = ['ADMIN', 'SALESMAN', 'DELIVERY', 'ORGANISER']
+            
+            for role in roles:
+                if role == 'ADMIN':
+                    for perm in permissions:
+                        role_perm = RolePermission(
+                            role=role,
+                            permission_id=perm.id,
+                            granted=True
+                        )
+                        db.session.add(role_perm)
+                else:
+                    default_perms = DEFAULT_ROLE_PERMISSIONS.get(role, [])
+                    for perm_code in default_perms:
+                        perm = Permission.query.filter_by(code=perm_code).first()
+                        if perm:
                             role_perm = RolePermission(
                                 role=role,
                                 permission_id=perm.id,
                                 granted=True
                             )
                             db.session.add(role_perm)
-                    else:
-                        default_perms = DEFAULT_ROLE_PERMISSIONS.get(role, [])
-                        for perm_code in default_perms:
-                            perm = Permission.query.filter_by(code=perm_code).first()
-                            if perm:
-                                role_perm = RolePermission(
-                                    role=role,
-                                    permission_id=perm.id,
-                                    granted=True
-                                )
-                                db.session.add(role_perm)
-                
-                # Create users
-                users_to_create = [
-                    {'username': 'admin', 'role': 'ADMIN', 'password': 'admin123'},
-                    {'username': 'salesman', 'role': 'SALESMAN', 'password': 'salesman123'},
-                    {'username': 'delivery', 'role': 'DELIVERY', 'password': 'delivery123'},
-                    {'username': 'organiser', 'role': 'ORGANISER', 'password': 'organiser123'}
-                ]
-                
-                for user_data in users_to_create:
-                    user = User(
-                        tenant_id=tenant.id,
-                        username=user_data['username'],
-                        role=user_data['role'],
-                        is_active=True
-                    )
-                    user.set_password(user_data['password'])
-                    db.session.add(user)
-                
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'message': 'Database initialized successfully!',
-                    'tenant': tenant.name,
-                    'users_created': [u['username'] for u in users_to_create],
-                    'login_url': '/login'
-                }), 200
+            
+            # Create users
+            users_to_create = [
+                {'username': 'admin', 'role': 'ADMIN', 'password': 'admin123'},
+                {'username': 'salesman', 'role': 'SALESMAN', 'password': 'salesman123'},
+                {'username': 'delivery', 'role': 'DELIVERY', 'password': 'delivery123'},
+                {'username': 'organiser', 'role': 'ORGANISER', 'password': 'organiser123'}
+            ]
+            
+            for user_data in users_to_create:
+                user = User(
+                    tenant_id=tenant.id,
+                    username=user_data['username'],
+                    role=user_data['role'],
+                    is_active=True
+                )
+                user.set_password(user_data['password'])
+                db.session.add(user)
+            
+            db.session.commit()
+            
+            # Return user-friendly HTML response
+            users_list = ', '.join([u['username'] for u in users_to_create])
+            html = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>Database Initialized</title></head>
+            <body style="font-family: Arial; padding: 40px; text-align: center;">
+                <h2 style="color: #28a745;">✓ Database Initialized Successfully!</h2>
+                <p><strong>Tenant:</strong> {}</p>
+                <p><strong>Users Created:</strong> {}</p>
+                <div style="background: #f8f9fa; padding: 20px; margin: 20px auto; max-width: 500px; border-radius: 5px;">
+                    <h3>Default Login Credentials:</h3>
+                    <p><strong>Admin:</strong> admin / admin123</p>
+                    <p><strong>Salesman:</strong> salesman / salesman123</p>
+                    <p><strong>Delivery:</strong> delivery / delivery123</p>
+                    <p><strong>Organiser:</strong> organiser / organiser123</p>
+                </div>
+                <p><a href="/login" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px;">Go to Login Page</a></p>
+            </body>
+            </html>
+            """.format(tenant.name, users_list)
+            return html, 200
                 
         except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
+            error_trace = traceback.format_exc()
+            html = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>Initialization Error</title></head>
+            <body style="font-family: Arial; padding: 40px;">
+                <h2 style="color: #dc3545;">✗ Database Initialization Failed</h2>
+                <p><strong>Error:</strong> {}</p>
+                <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">{}</pre>
+                <p><a href="/init-db" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Try Again</a></p>
+            </body>
+            </html>
+            """.format(str(e), error_trace)
+            return html, 500
     
     return app
 
