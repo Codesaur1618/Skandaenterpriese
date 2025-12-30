@@ -62,3 +62,17 @@ static/uploads/bills/*
 # Migration files (optional - keep if you want)
 # migrate_db.py
 
+# Temporary documentation files
+CLEANUP_*.md
+FINAL_*.md
+SEQUENCE_FIX_EXPLANATION.md
+MIGRATION_*.md
+DELETE_*.md
+
+# HTML exports
+SUPABASE_SETUP.html
+DEPLOYMENT.html
+
+# Shell scripts (if not needed)
+# start.sh
+
