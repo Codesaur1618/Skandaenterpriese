@@ -83,15 +83,16 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if bill.payment_status == 'UNPAID' %}
+                            {% set bill_payment_status = payment_status_map.get(bill.id, 'UNPAID') %}
+                            {% if bill_payment_status == 'UNPAID' %}
                                 <span class="badge bg-danger">
                                     <i class="bi bi-exclamation-circle"></i> Unpaid
                                 </span>
-                            {% elif bill.payment_status == 'PARTIAL' %}
+                            {% elif bill_payment_status == 'PARTIAL' %}
                                 <span class="badge bg-warning">
                                     <i class="bi bi-hourglass-split"></i> Partial
                                 </span>
-                            {% elif bill.payment_status == 'PAID' %}
+                            {% elif bill_payment_status == 'PAID' %}
                                 <span class="badge bg-success">
                                     <i class="bi bi-check-circle-fill"></i> Paid
                                 </span>

@@ -59,13 +59,23 @@ def list():
     if status:
         query = query.filter(Bill.status == status)
     
+    # Payment status filter: computed from CreditEntry (not stored on Bill)
     if payment_status:
+        paid_subq = db.session.query(
+            CreditEntry.bill_id,
+            func.coalesce(func.sum(CreditEntry.amount), 0).label('total_paid')
+        ).filter(
+            CreditEntry.direction == 'INCOMING',
+            CreditEntry.bill_id.isnot(None)
+        ).group_by(CreditEntry.bill_id).subquery()
+        query = query.outerjoin(paid_subq, Bill.id == paid_subq.c.bill_id)
+        total_paid_col = func.coalesce(paid_subq.c.total_paid, 0)
         if payment_status == 'UNPAID':
-            query = query.filter(Bill.payment_status == 'UNPAID')
+            query = query.filter(total_paid_col == 0)
         elif payment_status == 'PARTIAL':
-            query = query.filter(Bill.payment_status == 'PARTIAL')
+            query = query.filter(total_paid_col > 0, total_paid_col < Bill.amount_total)
         elif payment_status == 'PAID':
-            query = query.filter(Bill.payment_status == 'PAID')
+            query = query.filter(total_paid_col >= Bill.amount_total)
     
     if bill_type:
         query = query.filter(Bill.bill_type == bill_type)
@@ -115,6 +125,27 @@ def list():
             query = query.order_by(Bill.created_at.desc())
     
     bills = query.all()
+    
+    # Compute payment_status for each bill (from CreditEntry, not stored on Bill)
+    payment_status_map = {}
+    if bills:
+        bill_ids = [b.id for b in bills]
+        paid_results = db.session.query(
+            CreditEntry.bill_id,
+            func.sum(CreditEntry.amount).label('total_paid')
+        ).filter(
+            CreditEntry.bill_id.in_(bill_ids),
+            CreditEntry.direction == 'INCOMING'
+        ).group_by(CreditEntry.bill_id).all()
+        paid_by_bill = {r.bill_id: float(r.total_paid) for r in paid_results}
+        for bill in bills:
+            total_paid = paid_by_bill.get(bill.id, 0)
+            if total_paid >= float(bill.amount_total):
+                payment_status_map[bill.id] = 'PAID'
+            elif total_paid > 0:
+                payment_status_map[bill.id] = 'PARTIAL'
+            else:
+                payment_status_map[bill.id] = 'UNPAID'
     
     # Get vendors for filter dropdown
     vendors = Vendor.query.filter_by(tenant_id=tenant.id).order_by(Vendor.name).all()
@@ -233,7 +264,7 @@ def list():
     if show_unauthorized:
         active_filters['Filter'] = 'Unauthorized Only'
     
-    return render_template('bills/list.html', bills=bills, vendors=vendors, filters=filters, active_filters=active_filters)
+    return render_template('bills/list.html', bills=bills, vendors=vendors, filters=filters, active_filters=active_filters, payment_status_map=payment_status_map)
 
 
 @bill_bp.route('/new/ocr-upload', methods=['POST'])

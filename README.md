@@ -19,7 +19,7 @@ A simple, low-cost monolithic web application for managing vendors, bills, proxy
 - **Backend**: Python Flask
 - **Templates**: Jinja2 with HTML + CSS + JavaScript
 - **Styling**: Bootstrap 5 (via CDN)
-- **Database**: SQLite with SQLAlchemy ORM
+- **Database**: Supabase (PostgreSQL) with SQLAlchemy ORM
 - **Authentication**: Flask-Login with session-based auth
 - **Forms**: Flask-WTF
 - **OCR**: EasyOCR (optional)
@@ -46,22 +46,30 @@ pip install -r requirements.txt
 
 **Note**: EasyOCR installation may take some time as it downloads model files on first use. If you don't need OCR functionality, you can skip installing EasyOCR and the app will work without it (showing a message that OCR is not installed).
 
-### 3. Initialize Database
+### 3. Configure Supabase
 
-Run the seed script to create the database and default data:
+1. Create a `.env` file with your Supabase connection string:
+   ```
+   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
+   SECRET_KEY=your-secret-key
+   ```
+2. Run the migration in Supabase SQL Editor: copy `migrations/001_initial_schema.sql` and execute it.
+
+### 4. Initialize Database
+
+Run the seed script to populate initial data:
 
 ```bash
 python seed.py
 ```
 
 This will:
-- Create all database tables
 - Create default tenant: "Skanda Enterprises" (code: "skanda")
 - Create admin user with credentials:
   - Username: `admin`
-  - Password: `admin123`
+  - Password: `admin12233`
 
-### 4. Run the Application
+### 5. Run the Application
 
 ```bash
 python app.py
@@ -69,11 +77,11 @@ python app.py
 
 The application will start on `http://127.0.0.1:5000`
 
-### 5. Login
+### 6. Login
 
 Navigate to `http://127.0.0.1:5000/login` and use:
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `admin12233`
 
 ## Project Structure
 
@@ -169,15 +177,14 @@ skanda_app/
 ## Default Credentials
 
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `admin12233`
 
 **Important**: Change the default password after first login in a production environment.
 
 ## Notes
 
-- The application uses a single tenant ("skanda") by default
+- The application uses Supabase (PostgreSQL) as the database
 - All file uploads are stored in `static/uploads/bills/`
-- The database file (`skanda.db`) is created in the project root
 - OCR functionality requires EasyOCR to be installed. The app will work without it but will show a message that OCR is not available.
 
 ## Development

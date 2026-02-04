@@ -231,7 +231,7 @@ class TestOCRFunctionality:
             assert reader1 is reader2
     
     def test_ocr_extraction_logic(self):
-        """Test OCR text extraction logic"""
+        """Test OCR text extraction logic - extract_bill_info returns bill_number, bill_date, total, etc. (not items)"""
         from bill_routes import extract_bill_info
         
         # Test with sample OCR text
@@ -250,11 +250,11 @@ class TestOCRFunctionality:
         
         result = extract_bill_info(ocr_text)
         
+        # extract_bill_info returns: bill_number, bill_date, delivery_date, subtotal, tax, total, total_net, etc.
         assert result['bill_number'] == 'ORD-2023-78912'
         assert result['bill_date'] == '2023-10-27'
-        assert len(result['items']) >= 2  # OCR may extract 2-3 items
-        # Total may be None if not found, but should have items
-        assert result.get('total') is not None or len(result['items']) > 0
+        assert result.get('total') is not None
+        assert float(result['total']) >= 100  # Total: S103.25 in sample text
 
 
 class TestPermissions:
