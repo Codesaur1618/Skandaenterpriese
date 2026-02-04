@@ -33,4 +33,4 @@ vercel
 ## Limitations
 
 - **File uploads**: Vercel serverless has ephemeral filesystem. Bill image uploads may need Supabase Storage for production.
-- **Bundle size**: Python functions have a 250MB limit. `easyocr` adds weight; consider lazy-loading or alternative OCR for production.
+- **OCR disabled**: `easyocr`/torch (~500MB) excluded to stay under 250MB. Bill image OCR shows a message; use local/dev for OCR.
