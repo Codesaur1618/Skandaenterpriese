@@ -58,14 +58,19 @@ def create_app(config_name='default'):
     app.register_blueprint(report_bp, url_prefix='/reports')
     app.register_blueprint(permission_bp, url_prefix='/permissions')
     
-    # Create upload directories
-    upload_folder = app.config['UPLOAD_FOLDER']
-    os.makedirs(upload_folder, exist_ok=True)
-    
-    # Create backup directory
-    backup_folder = app.config.get('BACKUP_FOLDER')
-    if backup_folder:
-        os.makedirs(backup_folder, exist_ok=True)
+    # Create upload/backup directories (use /tmp on Vercel - read-only filesystem)
+    try:
+        upload_folder = app.config['UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+    except (OSError, PermissionError):
+        app.config['UPLOAD_FOLDER'] = '/tmp/uploads/bills'
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        backup_folder = app.config.get('BACKUP_FOLDER')
+        if backup_folder:
+            os.makedirs(backup_folder, exist_ok=True)
+    except (OSError, PermissionError):
+        pass
     
     # Database health check endpoint
     @app.route('/health/db')

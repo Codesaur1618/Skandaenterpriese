@@ -7,8 +7,14 @@ load_dotenv()
 
 basedir = Path(__file__).parent.absolute()
 
-# Ensure upload/backup directories exist
-basedir.mkdir(parents=True, exist_ok=True)
+# Ensure upload/backup directories exist (skip on Vercel - read-only filesystem)
+try:
+    basedir.mkdir(parents=True, exist_ok=True)
+except (OSError, PermissionError):
+    pass
+
+# Vercel serverless has read-only filesystem; use /tmp for writable paths
+_vercel = os.environ.get('VERCEL') == '1'
 
 
 class Config:
@@ -46,9 +52,9 @@ class Config:
         SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'check_same_thread': False}}
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = basedir / 'static' / 'uploads' / 'bills'
+    UPLOAD_FOLDER = Path('/tmp/uploads/bills') if _vercel else (basedir / 'static' / 'uploads' / 'bills')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    BACKUP_FOLDER = basedir / 'backups'
+    BACKUP_FOLDER = Path('/tmp/backups') if _vercel else (basedir / 'backups')
     BACKUP_RETENTION_DAYS = 30
 
 
