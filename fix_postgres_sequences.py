@@ -2,13 +2,22 @@
 Fix PostgreSQL sequences after data migration
 When data is migrated with explicit IDs, PostgreSQL sequences don't advance.
 This script resets all sequences to the correct values.
+Uses DATABASE_URL from .env (required).
 """
 
 import os
+import sys
 from sqlalchemy import create_engine, text
 
-# Supabase connection string
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:skandadb%40007@db.yqhwlczamvzmbziabwyv.supabase.co:5432/postgres')
+from dotenv import load_dotenv
+load_dotenv()
+
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if not DATABASE_URL or 'postgresql' not in DATABASE_URL.lower():
+    print("Error: DATABASE_URL must be set in .env to a PostgreSQL connection string.")
+    sys.exit(1)
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 def fix_sequences():
     """Fix all PostgreSQL sequences to match current max IDs"""

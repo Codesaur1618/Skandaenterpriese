@@ -29,13 +29,6 @@ def create_app(config_name='default'):
         engine_options = config[config_name].SQLALCHEMY_ENGINE_OPTIONS
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
     
-    # Initialize SQLite WAL mode for better concurrency (only for SQLite)
-    with app.app_context():
-        from extensions import init_sqlite_wal_mode, is_sqlite
-        database_uri = app.config['SQLALCHEMY_DATABASE_URI']
-        if is_sqlite(database_uri):
-            init_sqlite_wal_mode(database_uri)
-    
     login_manager.init_app(app)
     
     # User loader for Flask-Login
@@ -79,24 +72,17 @@ def create_app(config_name='default'):
     def db_health():
         """Check database connection health"""
         try:
-            from extensions import db, is_sqlite, is_postgresql
+            from extensions import db, is_postgresql
             from sqlalchemy import text
             db.session.execute(text('SELECT 1'))
             
             database_uri = app.config['SQLALCHEMY_DATABASE_URI']
             response = {
                 'status': 'healthy',
-                'database_type': 'postgresql' if is_postgresql(database_uri) else 'sqlite' if is_sqlite(database_uri) else 'unknown'
+                'database_type': 'postgresql' if is_postgresql(database_uri) else 'unknown'
             }
             
-            # Add database-specific info
-            if is_sqlite(database_uri):
-                db_file = database_uri.replace('sqlite:///', '')
-                db_size = os.path.getsize(db_file) if os.path.exists(db_file) else 0
-                response['database_file'] = db_file
-                response['database_size_bytes'] = db_size
-                response['database_size_mb'] = round(db_size / (1024 * 1024), 2)
-            elif is_postgresql(database_uri):
+            if is_postgresql(database_uri):
                 # Get database name from connection string
                 try:
                     # Extract database name from URI

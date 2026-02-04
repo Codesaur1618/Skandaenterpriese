@@ -1,14 +1,21 @@
 """
 Direct seeding script for Supabase PostgreSQL
 Doesn't require Flask to be installed
+Loads .env for DATABASE_URL and other Supabase config.
 """
 
 import os
+import sys
 import psycopg2
 from psycopg2.extras import execute_values
 from werkzeug.security import generate_password_hash
 
-DATABASE_URL = "postgresql://postgres:skandadb%40007@db.yqhwlczamvzmbziabwyv.supabase.co:5432/postgres"
+# Load .env file for DATABASE_URL (Supabase)
+from dotenv import load_dotenv
+load_dotenv()
+
+# Use DATABASE_URL from environment - never hardcode credentials
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 # Define all permissions
 PERMISSIONS = [
@@ -66,7 +73,13 @@ DEFAULT_ROLE_PERMISSIONS = {
 }
 
 def main():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    if not DATABASE_URL or 'postgresql' not in DATABASE_URL.lower():
+        print("Error: DATABASE_URL environment variable must be set to a PostgreSQL connection string.")
+        print("Example: export DATABASE_URL='postgresql://postgres:PASSWORD@db.xxx.supabase.co:5432/postgres'")
+        sys.exit(1)
+    # Fix postgres:// to postgresql:// for compatibility
+    db_url = DATABASE_URL.replace('postgres://', 'postgresql://', 1) if DATABASE_URL.startswith('postgres://') else DATABASE_URL
+    conn = psycopg2.connect(db_url, sslmode='require')
     cursor = conn.cursor()
     
     try:

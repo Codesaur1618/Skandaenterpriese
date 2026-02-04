@@ -22,6 +22,7 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -40,6 +41,7 @@ skanda.db
 # IDE
 .vscode/
 .idea/
+*.code-workspace
 *.swp
 *.swo
 *~
@@ -76,8 +78,13 @@ GIT_PUSH_SUMMARY.md
 CLEANUP_*.md
 FINAL_*.md
 SEQUENCE_FIX_EXPLANATION.md
-MIGRATION_*.md
 DELETE_*.md
+
+# Keep MIGRATION_GUIDE.md (useful for Supabase migration)
+# MIGRATION_*.md
+
+# Backups (local SQL dumps - never commit)
+backups/
 
 # HTML exports
 SUPABASE_SETUP.html

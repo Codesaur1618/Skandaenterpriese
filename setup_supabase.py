@@ -1,6 +1,7 @@
 """
 Automated Supabase setup script
 Creates schema and migrates data from SQLite if exists
+Uses DATABASE_URL from .env (required).
 """
 
 import os
@@ -10,8 +11,16 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 import urllib.parse
 
-# Supabase connection string (password URL-encoded)
-DATABASE_URL = "postgresql://postgres:skandadb%40007@db.yqhwlczamvzmbziabwyv.supabase.co:5432/postgres"
+from dotenv import load_dotenv
+load_dotenv()
+
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if not DATABASE_URL or 'postgresql' not in DATABASE_URL.lower():
+    print("Error: DATABASE_URL must be set in .env to a PostgreSQL connection string.")
+    print("Example: DATABASE_URL=postgresql://postgres:PASSWORD@db.xxx.supabase.co:5432/postgres")
+    sys.exit(1)
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 def print_header(text):
     print(f"\n{'='*60}")
@@ -26,6 +35,9 @@ def print_error(text):
 
 def print_info(text):
     print(f"ℹ {text}")
+
+def print_warning(text):
+    print(f"⚠ {text}")
 
 def test_connection():
     """Test connection to Supabase"""
@@ -157,7 +169,6 @@ def seed_initial_data():
             
             if tenant_count == 0:
                 print_info("No data found. Running seed script...")
-                os.environ['DATABASE_URL'] = DATABASE_URL
                 os.environ['FLASK_ENV'] = 'production'
                 
                 # Import and run seed directly instead of subprocess
@@ -267,29 +278,26 @@ def seed_initial_data():
         return False
 
 def create_env_file():
-    """Create .env file with DATABASE_URL"""
+    """Ensure .env file has DATABASE_URL (from current environment)"""
     print_header("Creating .env File")
     env_file = Path(".env")
+    db_url = os.environ.get('DATABASE_URL', '')
+    
+    if not db_url:
+        print_info("DATABASE_URL not in environment. Skipping .env update.")
+        return True
     
     if env_file.exists():
         print_info(".env file already exists. Updating DATABASE_URL...")
-        # Read existing .env
-        lines = []
-        if env_file.exists():
-            with open(env_file, 'r') as f:
-                lines = f.readlines()
-        
-        # Remove old DATABASE_URL if exists
+        with open(env_file, 'r') as f:
+            lines = f.readlines()
         lines = [l for l in lines if not l.startswith('DATABASE_URL=')]
-        
-        # Add new DATABASE_URL
-        lines.append(f'DATABASE_URL={DATABASE_URL}\n')
-        
+        lines.append(f'DATABASE_URL={db_url}\n')
         with open(env_file, 'w') as f:
             f.writelines(lines)
     else:
         with open(env_file, 'w') as f:
-            f.write(f'DATABASE_URL={DATABASE_URL}\n')
+            f.write(f'DATABASE_URL={db_url}\n')
     
     print_success(".env file created/updated")
     return True
