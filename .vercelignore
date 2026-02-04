@@ -1,0 +1,16 @@
+# Reduce bundle size - exclude from serverless function
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+*.md
+.git
+.gitignore
+backups
+*.sql
+.env
+.env.*
+CustomerMasterDetails.csv
+*.csv

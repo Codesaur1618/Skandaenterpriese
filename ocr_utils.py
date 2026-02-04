@@ -142,8 +142,11 @@ def run_ocr(image_path, return_detailed=False):
         cleanup_processed = (processed_path != image_path)
         
         try:
-            # Get cached reader
-            reader = get_ocr_reader()
+            # Get cached reader (may raise ImportError if easyocr not installed, e.g. on Vercel)
+            try:
+                reader = get_ocr_reader()
+            except ImportError:
+                return "OCR is not available in this environment. Bill image OCR requires easyocr (use local/dev)."
             
             # Run OCR with detailed results
             logger.info(f"Processing OCR for image: {image_path}")

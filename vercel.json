@@ -1,4 +1,5 @@
 {
+  "installCommand": "pip install -r requirements-vercel.txt",
   "buildCommand": "python vercel_build.py",
   "framework": "flask",
   "regions": ["sin1"]
