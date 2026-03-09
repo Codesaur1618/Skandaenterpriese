@@ -34,10 +34,13 @@
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
+                        <th>Code</th>
                         <th class="sortable">Name <i class="bi bi-arrow-down-up"></i></th>
                         <th>Type</th>
-                        <th>Phone</th>
-                        <th>Email</th>
+                        <th>Contact</th>
+                        <th>City/State</th>
+                        <th>GSTIN</th>
+                        <th>Status</th>
                         <th class="sortable">Credit Limit <i class="bi bi-arrow-down-up"></i></th>
                         <th>Actions</th>
                     </tr>
@@ -46,7 +49,17 @@
                     {% for vendor in vendors %}
                     <tr>
                         <td>
+                            {% if vendor.customer_code %}
+                                <span class="text-muted small">{{ vendor.customer_code }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <strong><i class="bi bi-building"></i> {{ vendor.name }}</strong>
+                            {% if vendor.contact_person %}
+                                <div class="small text-muted">Contact: {{ vendor.contact_person }}</div>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="badge bg-info">
@@ -54,17 +67,39 @@
                             </span>
                         </td>
                         <td>
-                            {% if vendor.contact_phone %}
-                                <i class="bi bi-telephone"></i> {{ vendor.contact_phone }}
+                            {% if vendor.contact_phone or vendor.email %}
+                                {% if vendor.contact_phone %}
+                                    <div><i class="bi bi-telephone"></i> {{ vendor.contact_phone }}</div>
+                                {% endif %}
+                                {% if vendor.email %}
+                                    <div class="small text-muted"><i class="bi bi-envelope"></i> {{ vendor.email }}</div>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if vendor.email %}
-                                <i class="bi bi-envelope"></i> {{ vendor.email }}
+                            {% if vendor.city or vendor.state %}
+                                {{ vendor.city or '-' }}{% if vendor.city and vendor.state %}, {% endif %}{{ vendor.state or '' }}
                             {% else %}
                                 <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if vendor.gst_number %}
+                                <span class="small">{{ vendor.gst_number }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if (vendor.status or 'ACTIVE') == 'ACTIVE' %}
+                                <span class="badge bg-success">ACTIVE</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ vendor.status }}</span>
+                            {% endif %}
+                            {% if (vendor.block_status or 'NO') == 'YES' %}
+                                <span class="badge bg-danger ms-1">BLOCKED</span>
                             {% endif %}
                         </td>
                         <td>

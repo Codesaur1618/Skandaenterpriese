@@ -16,6 +16,7 @@ from ocr_routes import ocr_bp
 from report_routes import report_bp
 from permission_routes import permission_bp
 from picklist_routes import picklist_bp
+from data_import_routes import data_import_bp
 
 
 def create_app(config_name='default'):
@@ -69,6 +70,7 @@ def create_app(config_name='default'):
     app.register_blueprint(report_bp, url_prefix='/reports')
     app.register_blueprint(permission_bp, url_prefix='/permissions')
     app.register_blueprint(picklist_bp, url_prefix='/picklists')
+    app.register_blueprint(data_import_bp, url_prefix='/data-imports')
     
     # Create upload/backup directories (use /tmp on Vercel - read-only filesystem)
     try:

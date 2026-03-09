@@ -102,6 +102,52 @@ class Vendor(db.Model):
     credit_entries = db.relationship('CreditEntry', backref='vendor', lazy=True)
 
 
+class OutstandingOutlet(db.Model):
+    __tablename__ = 'outstanding_outlets'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+    customer_code = db.Column(db.String(100), nullable=True)
+    customer_name = db.Column(db.String(255), nullable=False)
+    channel_type = db.Column(db.String(100), nullable=True)
+    outlet_type = db.Column(db.String(100), nullable=True)
+    loyalty_program = db.Column(db.String(100), nullable=True)
+    credit_term = db.Column(db.String(100), nullable=True)
+    salesman_name = db.Column(db.String(200), nullable=True)
+    beat = db.Column(db.String(200), nullable=True)
+    salesman_type = db.Column(db.String(100), nullable=True)
+    document_type = db.Column(db.String(100), nullable=True)
+    document_no = db.Column(db.String(100), nullable=True)
+    document_date = db.Column(db.Date, nullable=True)
+    amount = db.Column(db.Numeric(12, 2), default=0.00)
+    balance = db.Column(db.Numeric(12, 2), default=0.00)
+    due_days = db.Column(db.Integer, nullable=True)
+    over_due_days = db.Column(db.Integer, nullable=True)
+    invoice_status = db.Column(db.String(50), nullable=True)
+    imported_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class BeatMasterEntry(db.Model):
+    __tablename__ = 'beat_master_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+    ds_code = db.Column(db.String(50), nullable=True)
+    ds_name = db.Column(db.String(200), nullable=True)
+    ds_type = db.Column(db.String(150), nullable=True)
+    ds_status = db.Column(db.String(50), nullable=True)
+    beat_code = db.Column(db.String(100), nullable=True)
+    beat_name = db.Column(db.String(200), nullable=True)
+    beat_end_date = db.Column(db.Date, nullable=True)
+    customer_code = db.Column(db.String(100), nullable=True)
+    customer_name = db.Column(db.String(255), nullable=True)
+    customer_status = db.Column(db.String(50), nullable=True)
+    frequency = db.Column(db.String(50), nullable=True)
+    beat_modified_at = db.Column(db.DateTime, nullable=True)
+    max_beat_count = db.Column(db.Integer, nullable=True)
+    imported_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class Bill(db.Model):
     __tablename__ = 'bills'
     

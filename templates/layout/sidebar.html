@@ -77,6 +77,20 @@
     </li>
     {% endif %}
     
+    {% if has_permission('view_reports') %}
+    <li class="nav-section-title mt-4">Data Imports</li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if request.endpoint and 'data_import.outstanding' in request.endpoint }}" href="{{ url_for('data_import.outstanding') }}">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Outstanding Outlets
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if request.endpoint and 'data_import.beat_master' in request.endpoint }}" href="{{ url_for('data_import.beat_master') }}">
+            <i class="bi bi-diagram-3"></i> Beat Master
+        </a>
+    </li>
+    {% endif %}
+
     <li class="nav-section-title mt-4">Settings</li>
     {% if has_permission('view_vendors') %}
     <li class="nav-item">

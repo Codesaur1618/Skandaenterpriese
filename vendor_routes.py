@@ -14,6 +14,7 @@ import csv
 from pathlib import Path
 from decimal import Decimal
 from io import StringIO
+import builtins
 
 vendor_bp = Blueprint('vendor', __name__)
 
@@ -40,8 +41,11 @@ def list():
         query = query.filter(
             or_(
                 Vendor.name.ilike(f'%{search}%'),
+                Vendor.customer_code.ilike(f'%{search}%'),
                 Vendor.email.ilike(f'%{search}%'),
-                Vendor.contact_phone.ilike(f'%{search}%')
+                Vendor.contact_phone.ilike(f'%{search}%'),
+                Vendor.gst_number.ilike(f'%{search}%'),
+                Vendor.city.ilike(f'%{search}%')
             )
         )
     
@@ -62,7 +66,7 @@ def list():
             'name': 'search',
             'label': 'Search',
             'type': 'search',
-            'placeholder': 'Search by name, email, or phone...',
+            'placeholder': 'Search by name, code, GSTIN, city, phone...',
             'value': search,
             'icon': 'bi-search',
             'col_size': 4
@@ -646,7 +650,7 @@ def upload_excel():
                     
                     # Debug first few rows
                     if row_idx <= 3:
-                        row_list = list(row) if not isinstance(row, list) else row
+                        row_list = builtins.list(row) if not isinstance(row, builtins.list) else row
                         current_app.logger.info(f"Row {row_idx}: customer_name='{customer_name}', customer_code='{customer_code}', row_length={len(row_list)}")
                         if 'Customer Name' in col_map:
                             col_idx = col_map['Customer Name']
@@ -656,7 +660,7 @@ def upload_excel():
                             else:
                                 current_app.logger.warning(f"Row {row_idx}: Customer Name column index {col_idx} is out of range (row has {len(row_list)} columns)")
                         else:
-                            current_app.logger.error(f"Row {row_idx}: Customer Name not in col_map! Available mappings: {list(col_map.keys())[:10]}")
+                            current_app.logger.error(f"Row {row_idx}: Customer Name not in col_map! Available mappings: {builtins.list(col_map.keys())[:10]}")
                     
                     # Validate mandatory fields
                     if not customer_name:
