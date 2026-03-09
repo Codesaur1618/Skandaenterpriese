@@ -43,7 +43,7 @@
 
 <div class="row g-4 mb-5">
     <!-- Vendors Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-body p-0">
                 <div class="stats-card">
@@ -63,7 +63,7 @@
     </div>
     
     <!-- Bills Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-body p-0">
                 <div class="stats-card">
@@ -83,7 +83,7 @@
     </div>
     
     <!-- Outstanding Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-body p-0">
                 <div class="stats-card">
@@ -101,7 +101,68 @@
             </div>
         </div>
     </div>
+
+    <!-- Deliveries Card -->
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="stats-card">
+                    <div class="stats-info">
+                        <h6>Total Deliveries</h6>
+                        <h3>{{ stats.delivery_count }}</h3>
+                        <a href="{{ url_for('delivery.list') }}" class="btn btn-sm btn-outline-primary mt-3">
+                            View All <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="stats-icon bg-info-subtle text-info-emphasis">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+{% if has_permission('view_reports') %}
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="stats-card">
+                    <div class="stats-info">
+                        <h6>Outstanding Import Rows</h6>
+                        <h3>{{ stats.outstanding_rows_count }}</h3>
+                        <a href="{{ url_for('data_import.outstanding') }}" class="btn btn-sm btn-outline-primary mt-3">
+                            Open Outstanding Imports <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="stats-icon bg-primary-subtle text-primary-emphasis">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="stats-card">
+                    <div class="stats-info">
+                        <h6>Beat Master Import Rows</h6>
+                        <h3>{{ stats.beat_master_rows_count }}</h3>
+                        <a href="{{ url_for('data_import.beat_master') }}" class="btn btn-sm btn-outline-primary mt-3">
+                            Open Beat Master Imports <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="stats-icon bg-success-subtle text-success-emphasis">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="row">
     <div class="col-12">
@@ -129,6 +190,14 @@
                     {% if has_permission('create_delivery') %}
                     <a href="{{ url_for('delivery.create') }}" class="btn btn-warning px-4 py-2 text-white">
                         <i class="bi bi-truck me-2"></i> Create Delivery
+                    </a>
+                    {% endif %}
+                    {% if has_permission('view_reports') %}
+                    <a href="{{ url_for('data_import.outstanding') }}" class="btn btn-outline-primary px-4 py-2">
+                        <i class="bi bi-upload me-2"></i> Upload Outstanding CSV
+                    </a>
+                    <a href="{{ url_for('data_import.beat_master') }}" class="btn btn-outline-success px-4 py-2">
+                        <i class="bi bi-upload me-2"></i> Upload Beat Master CSV
                     </a>
                     {% endif %}
                 </div>

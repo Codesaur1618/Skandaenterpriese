@@ -1,6 +1,14 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from models import Vendor, Bill, CreditEntry, Tenant
+from models import (
+    Vendor,
+    Bill,
+    CreditEntry,
+    Tenant,
+    DeliveryOrder,
+    OutstandingOutlet,
+    BeatMasterEntry,
+)
 from sqlalchemy import func
 from extensions import db
 from auth_routes import permission_required
@@ -22,6 +30,9 @@ def dashboard():
     # Get stats
     vendor_count = Vendor.query.filter_by(tenant_id=tenant.id).count()
     bill_count = Bill.query.filter_by(tenant_id=tenant.id).count()
+    delivery_count = DeliveryOrder.query.filter_by(tenant_id=tenant.id).count()
+    outstanding_rows_count = OutstandingOutlet.query.filter_by(tenant_id=tenant.id).count()
+    beat_master_rows_count = BeatMasterEntry.query.filter_by(tenant_id=tenant.id).count()
     
     # Calculate outstanding: total billed - total incoming payments
     total_billed = db.session.query(func.sum(Bill.amount_total)).filter_by(
@@ -41,7 +52,10 @@ def dashboard():
     stats = {
         'vendor_count': vendor_count,
         'bill_count': bill_count,
-        'outstanding': outstanding
+        'delivery_count': delivery_count,
+        'outstanding': outstanding,
+        'outstanding_rows_count': outstanding_rows_count,
+        'beat_master_rows_count': beat_master_rows_count
     }
     
     return render_template('dashboard.html', stats=stats)
