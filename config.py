@@ -19,6 +19,8 @@ _vercel = os.environ.get('VERCEL') == '1'
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    # Cross-origin session for API + static frontend (Vercel -> Render)
+    SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' when FRONTEND_URL set (production)
     
     # Database: Supabase PostgreSQL only (DATABASE_URL required)
     database_url = os.environ.get('DATABASE_URL', '')
@@ -67,6 +69,8 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
 
 
 config = {

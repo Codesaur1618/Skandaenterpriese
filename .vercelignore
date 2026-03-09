@@ -1,11 +1,10 @@
-# Reduce bundle size - exclude from serverless function
+# Reduce bundle size for Vercel
 .venv
 venv
 __pycache__
 *.pyc
 .pytest_cache
 tests
-*.md
 .git
 .gitignore
 backups
@@ -14,3 +13,7 @@ backups
 .env.*
 CustomerMasterDetails.csv
 *.csv
+run_tests.ps1
+run.ps1
+start.sh
+render.yaml
