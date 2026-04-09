@@ -52,13 +52,20 @@ def _normalize_header(h):
     return str(h).strip()
 
 
+def _normalize_token(s):
+    """Normalize labels for robust header matching (case/space/punctuation-insensitive)."""
+    text = _normalize_header(s).lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def _find_column_index(headers, canonical_key):
     names = PICKLIST_CSV_COLUMNS.get(canonical_key, [])
-    normalized_headers = [_normalize_header(h) for h in headers]
+    normalized_headers = [_normalize_token(h) for h in headers]
     for alias in names:
-        alias_clean = alias.strip().lower()
+        alias_clean = _normalize_token(alias)
         for i, h in enumerate(normalized_headers):
-            if h.lower() == alias_clean:
+            if h == alias_clean:
                 return i
     return -1
 
@@ -101,22 +108,75 @@ def parse_picklist_csv(filepath):
     if not csv_data or len(csv_data) < 2:
         raise ValueError("CSV file is empty or has no data rows")
 
-    headers = csv_data[0]
-    data_rows = csv_data[1:]
-    idx_inv = _find_column_index(headers, "invoice_no")
-    idx_person = _find_column_index(headers, "delivery_person")
-    idx_date = _find_column_index(headers, "delivery_date")
-    idx_address = _find_column_index(headers, "delivery_address")
-    idx_salesman = _find_column_index(headers, "salesman")
+    # Some picklist exports include metadata rows first and headers later.
+    # Find the best header row by required-column coverage.
+    best_header_idx = -1
+    best_score = -1
+    best_indices = None
+    for row_idx, header_row in enumerate(csv_data):
+        idx_inv_candidate = _find_column_index(header_row, "invoice_no")
+        idx_person_candidate = _find_column_index(header_row, "delivery_person")
+        idx_date_candidate = _find_column_index(header_row, "delivery_date")
+        idx_address_candidate = _find_column_index(header_row, "delivery_address")
+        score = 0
+        if idx_inv_candidate >= 0:
+            score += 2
+        if idx_person_candidate >= 0:
+            score += 1
+        if idx_date_candidate >= 0:
+            score += 1
+        if idx_address_candidate >= 0:
+            score += 1
+        if score > best_score:
+            best_score = score
+            best_header_idx = row_idx
+            best_indices = (
+                idx_inv_candidate,
+                idx_person_candidate,
+                idx_date_candidate,
+                idx_address_candidate,
+                _find_column_index(header_row, "salesman"),
+            )
+
+    if best_indices is None:
+        raise ValueError("Could not detect a valid CSV header row")
+
+    headers = csv_data[best_header_idx]
+    data_rows = csv_data[best_header_idx + 1 :]
+    idx_inv, idx_person, idx_date, idx_address, idx_salesman = best_indices
+    idx_customer_name = -1
+    normalized_headers = [_normalize_token(h) for h in headers]
+    for i, h in enumerate(normalized_headers):
+        if h in {"customer name", "customer"}:
+            idx_customer_name = i
+            break
+
+    # Metadata fallback values (from lines like "Delivery Person :,,,John")
+    metadata_delivery_person = None
+    metadata_delivery_date = None
+    metadata_delivery_address = None
+    for meta_row in csv_data[: best_header_idx if best_header_idx > 0 else 0]:
+        non_empty_cells = [_normalize_header(c) for c in meta_row if _normalize_header(c)]
+        if not non_empty_cells:
+            continue
+        row_text = " ".join(non_empty_cells)
+        key_text = _normalize_token(row_text)
+        last_value = non_empty_cells[-1]
+        if ("delivery person" in key_text or "delivery user" in key_text) and last_value:
+            metadata_delivery_person = last_value
+        elif "delivery date" in key_text and last_value:
+            metadata_delivery_date = last_value
+        elif "delivery address" in key_text and last_value:
+            metadata_delivery_address = last_value
 
     missing = []
     if idx_inv < 0:
         missing.append("Invoice No")
-    if idx_person < 0:
+    if idx_person < 0 and not metadata_delivery_person:
         missing.append("Delivery Person")
-    if idx_date < 0:
+    if idx_date < 0 and not metadata_delivery_date:
         missing.append("Delivery Date")
-    if idx_address < 0:
+    if idx_address < 0 and not metadata_delivery_address and idx_customer_name < 0:
         missing.append("Delivery Address")
     if missing:
         raise ValueError("Missing required columns: " + ", ".join(missing))
@@ -125,12 +185,40 @@ def parse_picklist_csv(filepath):
     for row in data_rows:
         if len(row) <= max(idx_inv, idx_person, idx_date, idx_address):
             continue
+        non_empty_count = sum(1 for cell in row if _normalize_header(cell))
         invoice_no = _normalize_header(row[idx_inv]) if idx_inv < len(row) else ""
-        delivery_person = _normalize_header(row[idx_person]) if idx_person < len(row) else ""
-        delivery_date_raw = _normalize_header(row[idx_date]) if idx_date < len(row) else ""
-        delivery_address = _normalize_header(row[idx_address]) if idx_address < len(row) else ""
+        delivery_person = _normalize_header(row[idx_person]) if idx_person >= 0 and idx_person < len(row) else ""
+        delivery_date_raw = _normalize_header(row[idx_date]) if idx_date >= 0 and idx_date < len(row) else ""
+        delivery_address = _normalize_header(row[idx_address]) if idx_address >= 0 and idx_address < len(row) else ""
+        customer_name = _normalize_header(row[idx_customer_name]) if idx_customer_name >= 0 and idx_customer_name < len(row) else ""
         salesman = _normalize_header(row[idx_salesman]) if idx_salesman >= 0 and idx_salesman < len(row) else None
-        if not invoice_no and not delivery_person and not delivery_address:
+        if not invoice_no and not delivery_person and not delivery_address and not customer_name:
+            continue
+        if not delivery_person and metadata_delivery_person:
+            delivery_person = _normalize_header(metadata_delivery_person)
+        if not delivery_date_raw and metadata_delivery_date:
+            delivery_date_raw = _normalize_header(metadata_delivery_date)
+        if not delivery_address:
+            if customer_name:
+                delivery_address = customer_name
+            elif metadata_delivery_address:
+                delivery_address = _normalize_header(metadata_delivery_address)
+        invoice_key = _normalize_token(invoice_no)
+        if invoice_key in {"invoice no", "salesman", "grand total", "picklist"}:
+            continue
+        if invoice_key.startswith("page "):
+            continue
+        if re.fullmatch(r"[-_\s]+", invoice_no or ""):
+            continue
+        if not delivery_address and idx_customer_name >= 0 and non_empty_count <= 2:
+            # Skip section rows in picklist exports like "Salesman ..." and page totals.
+            continue
+        if (
+            not delivery_address
+            and idx_customer_name >= 0
+            and not re.search(r"\d", invoice_no or "")
+            and "/" not in (invoice_no or "")
+        ):
             continue
         delivery_date = _parse_date(delivery_date_raw)
         rows.append({
