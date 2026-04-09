@@ -246,6 +246,18 @@ def upload():
         skipped_list = result["skipped"]
         msg = f"Picklist upload complete: {created} created, {updated} updated, {len(skipped_list)} skipped."
         flash(msg, "success")
+        if skipped_list and created == 0 and updated == 0:
+            missing_bill_skips = sum(
+                1
+                for _row, reason in skipped_list
+                if reason.startswith("No Bill or ProxyBill found for Invoice No")
+            )
+            if missing_bill_skips == len(skipped_list):
+                flash(
+                    "No matching bills/proxy bills found for uploaded invoices. "
+                    "Import or create bills first, then upload picklist again.",
+                    "warning",
+                )
         if skipped_list and len(skipped_list) <= 20:
             for _row, reason in skipped_list[:10]:
                 flash(f"Skipped: {reason}", "info")

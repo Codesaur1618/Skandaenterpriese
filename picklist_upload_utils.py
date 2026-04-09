@@ -291,9 +291,27 @@ def apply_picklist_rows(tenant_id, rows):
     from extensions import db
     from sqlalchemy import and_
 
+    def _normalize_lookup_key(value):
+        text = (value or "").strip().lower()
+        text = re.sub(r"[^a-z0-9/]+", "", text)
+        return text
+
     created = 0
     updated = 0
     skipped = []
+
+    bills = Bill.query.filter_by(tenant_id=tenant_id).all()
+    proxy_bills = ProxyBill.query.filter_by(tenant_id=tenant_id).all()
+    users = User.query.filter(
+        User.tenant_id == tenant_id,
+        User.role.in_(["DELIVERY", "SALESMAN"]),
+        User.is_active == True,
+    ).all()
+
+    bill_lookup = {_normalize_lookup_key(b.bill_number): b for b in bills if b.bill_number}
+    proxy_lookup = {_normalize_lookup_key(p.proxy_number): p for p in proxy_bills if p.proxy_number}
+    user_lookup = {_normalize_lookup_key(u.username): u for u in users if u.username}
+    default_delivery_user = next((u for u in users if u.role == "DELIVERY"), None)
 
     for row in rows:
         invoice_no = (row.get("invoice_no") or "").strip()
@@ -315,32 +333,30 @@ def apply_picklist_rows(tenant_id, rows):
             skipped.append((row, "Delivery Address is empty"))
             continue
 
-        bill = Bill.query.filter_by(tenant_id=tenant_id, bill_number=invoice_no).first()
+        normalized_invoice = _normalize_lookup_key(invoice_no)
+        bill = bill_lookup.get(normalized_invoice)
         proxy_bill = None
         if not bill:
-            proxy_bill = ProxyBill.query.filter_by(tenant_id=tenant_id, proxy_number=invoice_no).first()
+            proxy_bill = proxy_lookup.get(normalized_invoice)
         if not bill and not proxy_bill:
             skipped.append((row, f"No Bill or ProxyBill found for Invoice No '{invoice_no}'"))
             continue
 
-        delivery_user = User.query.filter(
-            User.tenant_id == tenant_id,
-            User.username == delivery_person,
-            User.role.in_(["DELIVERY", "SALESMAN"]),
-            User.is_active == True,
-        ).first()
+        delivery_user = user_lookup.get(_normalize_lookup_key(delivery_person))
+        if not delivery_user and _normalize_lookup_key(delivery_person) in {
+            "defaultdeliveryrepresentative",
+            "defaultdeliveryperson",
+            "deliveryrepresentative",
+            "deliveryperson",
+        }:
+            delivery_user = default_delivery_user
         if not delivery_user:
             skipped.append((row, f"No active user (DELIVERY/SALESMAN) found for '{delivery_person}'"))
             continue
 
         salesman_user = None
         if salesman_name:
-            salesman_user = User.query.filter(
-                User.tenant_id == tenant_id,
-                User.username == salesman_name,
-                User.role.in_(["DELIVERY", "SALESMAN"]),
-                User.is_active == True,
-            ).first()
+            salesman_user = user_lookup.get(_normalize_lookup_key(salesman_name))
 
         bill_id = bill.id if bill else None
         proxy_bill_id = proxy_bill.id if proxy_bill else None
