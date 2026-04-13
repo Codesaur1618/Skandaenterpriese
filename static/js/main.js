@@ -84,11 +84,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Smooth scroll for anchor links
+    // Smooth scroll for explicit in-page anchor links only.
+    // Avoid hijacking menu/tab/dropdown links that also use hash hrefs.
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-            if (href !== '#' && href.length > 1) {
+            const bsToggle = this.getAttribute('data-bs-toggle');
+            const isUiControl = !!bsToggle || this.getAttribute('role') === 'tab';
+
+            // Plain "#" links should never force browser jump-to-top.
+            if (href === '#') {
+                e.preventDefault();
+                return;
+            }
+
+            // Let Bootstrap/UI controls manage their own behavior.
+            if (isUiControl) {
+                return;
+            }
+
+            // Only smooth-scroll when explicitly opted in.
+            if (href && href.length > 1 && this.dataset.smoothScroll === 'true') {
                 e.preventDefault();
                 const target = document.querySelector(href);
                 if (target) {
