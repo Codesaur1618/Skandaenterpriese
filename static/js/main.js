@@ -67,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle (Updated for new design)
     const sidebarToggle = document.querySelector('.sidebar-toggle');
     const sidebar = document.querySelector('.app-sidebar');
+    const sidebarContent = document.querySelector('.sidebar-content');
+    const SIDEBAR_SCROLL_KEY = 'skanda_sidebar_scroll_top';
     
     if (sidebarToggle && sidebar) {
         sidebarToggle.addEventListener('click', function() {
@@ -82,6 +84,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 sidebar.classList.remove('show');
             }
         });
+    }
+
+    // Preserve sidebar scroll position across page navigation.
+    if (sidebarContent) {
+        const savedScroll = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+        if (savedScroll !== null) {
+            sidebarContent.scrollTop = parseInt(savedScroll, 10) || 0;
+        }
+
+        const saveSidebarScroll = function() {
+            sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(sidebarContent.scrollTop));
+        };
+
+        sidebarContent.addEventListener('scroll', saveSidebarScroll, { passive: true });
+        document.querySelectorAll('.sidebar-content .nav-link').forEach(function(link) {
+            link.addEventListener('click', saveSidebarScroll);
+        });
+        window.addEventListener('beforeunload', saveSidebarScroll);
     }
     
     // Smooth scroll for explicit in-page anchor links only.
